@@ -9,6 +9,7 @@ Usage
 -----
 
 Pinch works in several steps:
+
 __1.__  Create the Pinch object using the URL to the ZIP you want to pinch.
 
 __2.__  Retrieve the central directory (i.e. the list of all files inside the ZIP archive).
@@ -32,7 +33,7 @@ public void downloadZipContents(String zipUrl, String targetDir) throws Malforme
         } catch (IOException e) {
             e.printStackTrace();
             break;
-          }
+        }
     }
 }
 ```
