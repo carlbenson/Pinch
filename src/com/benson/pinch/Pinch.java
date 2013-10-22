@@ -262,6 +262,7 @@ public class Pinch {
         buf.order(ByteOrder.LITTLE_ENDIAN);
 
         int offset = 0;
+        CRC32 crc = new CRC32();
 
         while (offset < buf.limit() - ZipConstants.CENHDR) {
             short fileNameLen = buf.getShort(offset + ZipConstants.CENNAM);
@@ -274,7 +275,6 @@ public class Pinch {
 
             zeGermans.setMethod(buf.getShort(offset + ZipConstants.CENHOW));
 
-            CRC32 crc = new CRC32();
             crc.update(buf.getInt(offset + ZipConstants.CENCRC));
             zeGermans.setCrc(crc.getValue());
 
