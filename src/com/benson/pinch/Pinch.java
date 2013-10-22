@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.zip.CRC32;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-import java.util.zip.ZipConstants;
 
 import org.apache.http.client.methods.HttpHead;
 

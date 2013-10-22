@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package java.util.zip;
+package com.benson.pinch;
 
 /**
  * Modified copy of java/util/zip/ZipConstants.java from Android source.
