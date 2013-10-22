@@ -10,34 +10,31 @@ Usage
 
 Pinch works in several steps:
 __1.__  Create the Pinch object using the URL to the ZIP you want to pinch.
+
 __2.__  Retrieve the central directory (i.e. the list of all files inside the ZIP archive).
+
 __3.__  From this list, select which files you want to download.
 
 Simple example
 ------
 ```java
-public void downloadZipContents()  {
-    final String testUrl = "http://<path_to_zip_file>";
+public void downloadZipContents(String zipUrl, String targetDir) throws MalformedURLException  {
+    URL url = new URL(zipUrl);
+    Pinch pincher = new Pinch(url);
+
+    // get contents of ZIP archive.
+    List<ExtendedZipEntry> list = p.parseCentralDirectory();
+
+    // download each file separatly (typical external Android external storage path).
+    for (ExtendedZipEntry entry : list) {
         try {
-            URL url = new URL(testUrl);
-            Pinch p = new Pinch(url);
-            
-            // get contents of ZIP archive.
-            List<ExtendedZipEntry> list = p.parseCentralDirectory();
-            
-            // download each file separatly (typical external Android external storage path).
-            for (ExtendedZipEntry entry : list) {
-                try {
-                    p.downloadFile(entry, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                            + File.separator
-                            + entry.getName());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    break;
-                }
-            }
-        } catch (MalformedURLException e) {}
+            pincher.downloadFile(entry, targetDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+            break;
+          }
     }
+}
 ```
 
 License
