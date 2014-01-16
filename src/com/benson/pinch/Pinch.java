@@ -16,6 +16,7 @@
 
 package com.benson.pinch;
 
+import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -262,7 +263,6 @@ public class Pinch {
         buf.order(ByteOrder.LITTLE_ENDIAN);
 
         int offset = 0;
-        CRC32 crc = new CRC32();
 
         while (offset < buf.limit() - ZipConstants.CENHDR) {
             short fileNameLen = buf.getShort(offset + ZipConstants.CENNAM);
@@ -275,6 +275,7 @@ public class Pinch {
 
             zeGermans.setMethod(buf.getShort(offset + ZipConstants.CENHOW));
 
+            CRC32 crc = new CRC32();
             crc.update(buf.getInt(offset + ZipConstants.CENCRC));
             zeGermans.setCrc(crc.getValue());
 
@@ -283,6 +284,8 @@ public class Pinch {
             zeGermans.setInternalAttr(buf.getShort(offset + ZipConstants.CENATT));
             zeGermans.setExternalAttr(buf.getShort(offset + ZipConstants.CENATX));
             zeGermans.setOffset((long) buf.getInt(offset + ZipConstants.CENOFF));
+
+            zeGermans.setExtraLength(extraFieldLen);
 
             zeList.add(zeGermans);
             offset += ZipConstants.CENHDR + fileNameLen + extraFieldLen + fileCommentLen;
@@ -364,18 +367,21 @@ public class Pinch {
      *            Entry representing file to download.
      * @param name
      *            Path where to store the downloaded file.
-     * @throws FileNotFoundException
-     *             If file could not be created.
      * @throws IOException
      *             If an error occurred while reading from network or writing to disk.
      */
-    public void downloadFile(ExtendedZipEntry entry, String dir, String name) throws FileNotFoundException, IOException {
+    public void downloadFile(ExtendedZipEntry entry, String dir, String name) throws IOException {
         HttpURLConnection conn = null;
         InflaterInputStream zis = null;
+        BufferedInputStream bis = null;
         FileOutputStream fos = null;
 
         // this is where the local file header starts
-        long start = entry.getOffset() + ZipConstants.LOCHDR + entry.getName().length() + entry.getExtraLength();
+        long start = entry.getOffset()
+                + ZipConstants.LOCHDR
+                + entry.getName().length()
+                + entry.getExtraLength();
+
         long end = start + entry.getCompressedSize();
         try {
             File outFile = new File(dir != null ? dir + File.separator + name : name);
@@ -384,6 +390,11 @@ public class Pinch {
                 if (outFile.getParentFile() != null) {
                     outFile.getParentFile().mkdirs();
                 }
+            }
+
+            // no need to download 0 byte size directories
+            if (entry.isDirectory()) {
+                return;
             }
 
             fos = new FileOutputStream(outFile);
@@ -398,18 +409,29 @@ public class Pinch {
                 throw new IOException("Unexpected HTTP server response: " + responseCode);
             }
 
-            zis = new InflaterInputStream(conn.getInputStream(), new Inflater(true));
-
             byte[] buf = new byte[2048];
             int read, bytes = 0;
-            while ((read = zis.read(buf)) != -1) {
-                fos.write(buf, 0, read);
-                bytes += read;
+
+            // this is a stored (non-deflated) file, read it raw without inflating it
+            if (entry.getMethod() == 0) {
+                bis = new BufferedInputStream(conn.getInputStream());
+                while ((read = bis.read(buf)) != -1) {
+                    fos.write(buf, 0, read);
+                    bytes += read;
+                }
+            } else {
+                zis = new InflaterInputStream(conn.getInputStream(), new Inflater(true));
+                while ((read = zis.read(buf)) != -1) {
+                    fos.write(buf, 0, read);
+                    bytes += read;
+                }
             }
-            android.util.Log.d(LOG_TAG, "Wrote " + bytes + " bytes to " + name);
+
+            log("Wrote " + bytes + " bytes to " + name);
         } finally {
             close(fos);
             close(zis);
+            close(bis);
             disconnect(conn);
         }
     }
