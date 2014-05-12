@@ -1,4 +1,4 @@
-package com.benson.pinch;
+package guru.benson.pinch;
 
 /**
  * Knuth-Morris-Pratt Algorithm for Pattern Matching

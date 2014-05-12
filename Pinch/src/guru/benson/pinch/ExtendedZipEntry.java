@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.benson.pinch;
+package guru.benson.pinch;
 
 import java.util.zip.ZipEntry;
 
