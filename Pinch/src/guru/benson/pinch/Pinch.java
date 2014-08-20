@@ -350,7 +350,7 @@ public class Pinch {
     }
 
     /**
-     * Wrapper method for {@link #downloadFile(ExtendedZipEntry, String) where {@code name} is extracted from {@code entry}.
+     * Wrapper method for {@link #downloadFile(ExtendedZipEntry, String)} where {@code name} is extracted from {@code entry}.
      */
     public void downloadFile(ExtendedZipEntry entry) throws FileNotFoundException, IOException {
         downloadFile(entry, null, entry.getName());
