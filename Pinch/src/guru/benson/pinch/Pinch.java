@@ -50,7 +50,7 @@ public class Pinch {
          * @param progressDelta Number of bytes that have been downloaded since last update.
          * @param totalSize Total size in bytes.
          */
-        public void onUpdate(long progressTotal, long progressDelta, long totalSize);
+        public void onProgress(long progressTotal, long progressDelta, long totalSize);
     }
 
     private URL mUrl;
@@ -448,7 +448,7 @@ public class Pinch {
                 fos.write(buf, 0, read);
                 bytes += read;
                 if (listener != null) {
-                    listener.onUpdate(bytes, read, totalSize);
+                    listener.onProgress(bytes, read, totalSize);
                 }
             }
 
