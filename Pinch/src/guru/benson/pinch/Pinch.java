@@ -372,7 +372,8 @@ public class Pinch {
     }
 
     /**
-     * Wrapper method for {@link #downloadFile(ExtendedZipEntry, String, String, com.benson.pinch.Pinch.ProgressListener)} where {@code name} is extracted from {@code entry}.
+     * Wrapper method for {@link #downloadFile(ExtendedZipEntry, String, String, guru.benson.pinch.Pinch.ProgressListener)} 
+     * where {@code name} is extracted from {@code entry}.
      */
     public void downloadFile(ExtendedZipEntry entry, String dir, ProgressListener listener) throws IOException, InterruptedException {
         downloadFile(entry, dir, entry.getName(), listener);
