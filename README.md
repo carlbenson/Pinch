@@ -24,7 +24,7 @@ public void downloadZipContents(String zipUrl, String targetDir) throws Malforme
     Pinch pincher = new Pinch(url);
 
     // get contents of ZIP archive.
-    List<ExtendedZipEntry> list = p.parseCentralDirectory();
+    List<ExtendedZipEntry> list = pincher.parseCentralDirectory();
 
     // download each file separatly (typical external Android external storage path).
     for (ExtendedZipEntry entry : list) {
