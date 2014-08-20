@@ -1,5 +1,6 @@
 /*
  * Copyright 2013 Carl Benson
+ * Copyright 2014 Mattias Niiranen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.zip.CRC32;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
+import java.util.zip.ZipEntry;
 
 import org.apache.http.client.methods.HttpHead;
 
@@ -41,6 +43,15 @@ import org.apache.http.client.methods.HttpHead;
 public class Pinch {
 
     final public static String LOG_TAG = Pinch.class.getSimpleName();
+
+    public interface ProgressListener {
+        /**
+         * @param progressTotal Number of bytes that have been downloaded.
+         * @param progressDelta Number of bytes that have been downloaded since last update.
+         * @param totalSize Total size in bytes.
+         */
+        public void onUpdate(long progressTotal, long progressDelta, long totalSize);
+    }
 
     private URL mUrl;
     private String mUserAgent;
@@ -352,12 +363,19 @@ public class Pinch {
     /**
      * Wrapper method for {@link #downloadFile(ExtendedZipEntry, String)} where {@code name} is extracted from {@code entry}.
      */
-    public void downloadFile(ExtendedZipEntry entry) throws FileNotFoundException, IOException {
-        downloadFile(entry, null, entry.getName());
+    public void downloadFile(ExtendedZipEntry entry) throws IOException, InterruptedException {
+        downloadFile(entry, null, entry.getName(), null);
     }
 
-    public void downloadFile(ExtendedZipEntry entry, String dir) throws FileNotFoundException, IOException {
-        downloadFile(entry, dir, entry.getName());
+    public void downloadFile(ExtendedZipEntry entry, String dir) throws IOException, InterruptedException {
+        downloadFile(entry, dir, entry.getName(), null);
+    }
+
+    /**
+     * Wrapper method for {@link #downloadFile(ExtendedZipEntry, String, String, com.benson.pinch.Pinch.ProgressListener)} where {@code name} is extracted from {@code entry}.
+     */
+    public void downloadFile(ExtendedZipEntry entry, String dir, ProgressListener listener) throws IOException, InterruptedException {
+        downloadFile(entry, dir, entry.getName(), listener);
     }
 
     /**
@@ -367,13 +385,16 @@ public class Pinch {
      *            Entry representing file to download.
      * @param name
      *            Path where to store the downloaded file.
+     * @param listener
+     *
      * @throws IOException
      *             If an error occurred while reading from network or writing to disk.
+     * @throws InterruptedException
+     *             If the thread was interrupted.
      */
-    public void downloadFile(ExtendedZipEntry entry, String dir, String name) throws IOException {
+    public void downloadFile(ExtendedZipEntry entry, String dir, String name, ProgressListener listener) throws IOException, InterruptedException {
         HttpURLConnection conn = null;
-        InflaterInputStream zis = null;
-        BufferedInputStream bis = null;
+        InputStream is = null;
         FileOutputStream fos = null;
 
         // this is where the local file header starts
@@ -413,26 +434,30 @@ public class Pinch {
             int read, bytes = 0;
 
             // this is a stored (non-deflated) file, read it raw without inflating it
-            if (entry.getMethod() == 0) {
-                bis = new BufferedInputStream(conn.getInputStream());
-                while ((read = bis.read(buf)) != -1) {
-                    fos.write(buf, 0, read);
-                    bytes += read;
-                }
+            if (entry.getMethod() == ZipEntry.STORED) {
+                is = new BufferedInputStream(conn.getInputStream());
             } else {
-                zis = new InflaterInputStream(conn.getInputStream(), new Inflater(true));
-                while ((read = zis.read(buf)) != -1) {
-                    fos.write(buf, 0, read);
-                    bytes += read;
+                is = new InflaterInputStream(conn.getInputStream(), new Inflater(true));
+            }
+
+            long totalSize = entry.getSize();
+            while ((read = is.read(buf)) != -1) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new InterruptedException("Download was interrupted");
+                }
+                fos.write(buf, 0, read);
+                bytes += read;
+                if (listener != null) {
+                    listener.onUpdate(bytes, read, totalSize);
                 }
             }
 
             log("Wrote " + bytes + " bytes to " + name);
         } finally {
             close(fos);
-            close(zis);
-            close(bis);
+            close(is);
             disconnect(conn);
         }
     }
 }
+
