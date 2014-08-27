@@ -20,7 +20,6 @@ package guru.benson.pinch;
 import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -421,12 +420,24 @@ public class Pinch {
 
             fos = new FileOutputStream(outFile);
 
-            conn = openConnection();
-            conn.setRequestProperty("Range", "bytes=" + start + "-" + end);
-            conn.setInstanceFollowRedirects(true);
-            conn.connect();
+            int responseCode;
+            final String range = "bytes=" + start + "-" + end;
+            do {
+                conn = openConnection();
+                conn.setRequestProperty("Range", range);
+                conn.setInstanceFollowRedirects(true);
+                responseCode = conn.getResponseCode();
 
-            int responseCode = conn.getResponseCode();
+                // Follow re-directs
+                if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+                    if (setUrl(conn.getHeaderField("Location"))) {
+                        disconnect(conn);
+                    } else {
+                        break;
+                    }
+                }
+            } while (responseCode == HttpURLConnection.HTTP_MOVED_TEMP);
+
             if (responseCode != HttpURLConnection.HTTP_PARTIAL) {
                 throw new IOException("Unexpected HTTP server response: " + responseCode);
             }
