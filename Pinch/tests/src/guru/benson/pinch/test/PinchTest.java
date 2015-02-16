@@ -14,39 +14,36 @@
  * limitations under the License.
  */
 
-package com.benson.pinch.test;
+package guru.benson.pinch.test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 
 import android.os.Environment;
 import android.test.InstrumentationTestCase;
 
-import com.benson.pinch.ExtendedZipEntry;
-import com.benson.pinch.Pinch;
+import guru.benson.pinch.ExtendedZipEntry;
+import guru.benson.pinch.Pinch;
 
 public class PinchTest extends InstrumentationTestCase {
 
     final String testUrl = "http://www.cbconsulting.se/files/BSHInform.10.1.1-1.mib";
 
-    public void testFetchDirectory()  {
-        try {
-            URL url = new URL(testUrl);
-            Pinch p = new Pinch(url);
-            List<ExtendedZipEntry> list = p.parseCentralDirectory();
-            for (ExtendedZipEntry entry : list) {
-                try {
-                    p.downloadFile(entry, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                            + File.separator
-                            + entry.getName());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    break;
-                }
+    public void testFetchDirectory() throws Throwable {
+        URL url = new URL(testUrl);
+        Pinch p = new Pinch(url);
+        List<ExtendedZipEntry> list = p.parseCentralDirectory();
+        for (ExtendedZipEntry entry : list) {
+            try {
+                p.downloadFile(entry, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    + File.separator
+                    + entry.getName());
+            } catch (IOException e) {
+                e.printStackTrace();
+                break;
             }
-        } catch (MalformedURLException e) {}
+        }
     }
 }
