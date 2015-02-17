@@ -20,7 +20,6 @@ package guru.benson.pinch;
 import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,14 +45,17 @@ public class Pinch {
 
     public interface ProgressListener {
         /**
-         * @param progressTotal Number of bytes that have been downloaded.
-         * @param progressDelta Number of bytes that have been downloaded since last update.
-         * @param totalSize Total size in bytes.
+         * @param progressTotal
+         *     Number of bytes that have been downloaded.
+         * @param progressDelta
+         *     Number of bytes that have been downloaded since last update.
+         * @param totalSize
+         *     Total size in bytes.
          */
         public void onProgress(long progressTotal, long progressDelta, long totalSize);
     }
 
-    private URL mUrl;
+    private URL    mUrl;
     private String mUserAgent;
 
     private short entriesCount;
@@ -66,7 +68,7 @@ public class Pinch {
      * Class constructor.
      *
      * @param url
-     *            The URL pointing to the ZIP file on the HTTP server.
+     *     The URL pointing to the ZIP file on the HTTP server.
      */
     public Pinch(URL url) {
         this(url, null);
@@ -74,8 +76,11 @@ public class Pinch {
 
     /**
      * Class constructor.
-     * @param url The URL pointing to the ZIP file on the HTTP server.
-     * @param userAgent User-agent to be used together with the download request.
+     *
+     * @param url
+     *     The URL pointing to the ZIP file on the HTTP server.
+     * @param userAgent
+     *     User-agent to be used together with the download request.
      */
     public Pinch(URL url, String userAgent) {
         mUrl = url;
@@ -95,7 +100,7 @@ public class Pinch {
      * Handy log method.
      *
      * @param msg
-     *            The message to print to debug log.
+     *     The message to print to debug log.
      */
     private static void log(String msg) {
         if (BuildConfig.DEBUG) {
@@ -107,7 +112,7 @@ public class Pinch {
      * Handy close method to avoid nestled try/catch blocks.
      *
      * @param c
-     *            The object to close.
+     *     The object to close.
      */
     private static void close(Closeable c) {
         if (c != null) {
@@ -131,7 +136,7 @@ public class Pinch {
      * Handy disconnect method to wrap null-check.
      *
      * @param c
-     *            Connection to disconnect.
+     *     Connection to disconnect.
      */
     private static void disconnect(HttpURLConnection c) {
         if (c != null) {
@@ -176,7 +181,8 @@ public class Pinch {
      * Searches for the ZIP central directory.
      *
      * @param length
-     *            The content length of the file to search.
+     *     The content length of the file to search.
+     *
      * @return {@code true} if central directory was found and parsed, otherwise {@code false}
      */
     private boolean findCentralDirectory(int length) {
@@ -221,7 +227,8 @@ public class Pinch {
      * Parses the ZIP central directory from a byte buffer.
      *
      * @param data
-     *            The byte buffer to be parsed.
+     *     The byte buffer to be parsed.
+     *
      * @return {@code true} if central directory was parsed, otherwise {@code false}
      */
     private boolean parseEndOfCentralDirectory(byte[] data) {
@@ -265,7 +272,8 @@ public class Pinch {
      * Extract all ZipEntries from the ZIP central directory.
      *
      * @param buf
-     *            The byte buffer containing the ZIP central directory.
+     *     The byte buffer containing the ZIP central directory.
+     *
      * @return A list with all ZipEntries.
      */
     private static ArrayList<ExtendedZipEntry> parseHeaders(ByteBuffer buf) {
@@ -361,7 +369,8 @@ public class Pinch {
     }
 
     /**
-     * Wrapper method for {@link #downloadFile(ExtendedZipEntry, String)} where {@code name} is extracted from {@code entry}.
+     * Wrapper method for {@link #downloadFile(ExtendedZipEntry, String)} where {@code name} is
+     * extracted from {@code entry}.
      */
     public void downloadFile(ExtendedZipEntry entry) throws IOException, InterruptedException {
         downloadFile(entry, null, entry.getName(), null);
@@ -372,8 +381,9 @@ public class Pinch {
     }
 
     /**
-     * Wrapper method for {@link #downloadFile(ExtendedZipEntry, String, String, guru.benson.pinch.Pinch.ProgressListener)} 
-     * where {@code name} is extracted from {@code entry}.
+     * Wrapper method for {@link #downloadFile(ExtendedZipEntry, String, String,
+     * guru.benson.pinch.Pinch.ProgressListener)} where {@code name} is extracted from {@code
+     * entry}.
      */
     public void downloadFile(ExtendedZipEntry entry, String dir, ProgressListener listener) throws IOException, InterruptedException {
         downloadFile(entry, dir, entry.getName(), listener);
@@ -383,28 +393,21 @@ public class Pinch {
      * Download and inflate file from a ZIP stored on a HTTP server.
      *
      * @param entry
-     *            Entry representing file to download.
+     *     Entry representing file to download.
      * @param name
-     *            Path where to store the downloaded file.
+     *     Path where to store the downloaded file.
      * @param listener
      *
      * @throws IOException
-     *             If an error occurred while reading from network or writing to disk.
+     *     If an error occurred while reading from network or writing to disk.
      * @throws InterruptedException
-     *             If the thread was interrupted.
+     *     If the thread was interrupted.
      */
     public void downloadFile(ExtendedZipEntry entry, String dir, String name, ProgressListener listener) throws IOException, InterruptedException {
         HttpURLConnection conn = null;
         InputStream is = null;
         FileOutputStream fos = null;
 
-        // this is where the local file header starts
-        long start = entry.getOffset()
-                + ZipConstants.LOCHDR
-                + entry.getName().length()
-                + entry.getExtraLength();
-
-        long end = start + entry.getCompressedSize();
         try {
             File outFile = new File(dir != null ? dir + File.separator + name : name);
 
@@ -421,18 +424,10 @@ public class Pinch {
 
             fos = new FileOutputStream(outFile);
 
-            conn = openConnection();
-            conn.setRequestProperty("Range", "bytes=" + start + "-" + end);
-            conn.setInstanceFollowRedirects(true);
-            conn.connect();
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode != HttpURLConnection.HTTP_PARTIAL) {
-                throw new IOException("Unexpected HTTP server response: " + responseCode);
-            }
-
             byte[] buf = new byte[2048];
             int read, bytes = 0;
+
+            conn = getEntryInputStream(entry);
 
             // this is a stored (non-deflated) file, read it raw without inflating it
             if (entry.getMethod() == ZipEntry.STORED) {
@@ -446,6 +441,11 @@ public class Pinch {
                 if (Thread.currentThread().isInterrupted()) {
                     throw new InterruptedException("Download was interrupted");
                 }
+                // Ignore any extra data
+                if (totalSize < read + bytes) {
+                    read = ((int) totalSize) - bytes;
+                }
+
                 fos.write(buf, 0, read);
                 bytes += read;
                 if (listener != null) {
@@ -459,6 +459,75 @@ public class Pinch {
             close(is);
             disconnect(conn);
         }
+    }
+
+    /**
+     * Get a {@link java.net.HttpURLConnection} that has its {@link java.io.InputStream} pointing at
+     * the file data of the given {@link guru.benson.pinch.ExtendedZipEntry}.
+     *
+     * @throws IOException
+     */
+    private HttpURLConnection getEntryInputStream(ExtendedZipEntry entry) throws IOException {
+        HttpURLConnection conn;
+        InputStream is;
+
+        // Define the local header range
+        long start = entry.getOffset();
+        long end = start + ZipConstants.LOCHDR;
+
+        conn = openConnection();
+        conn.setRequestProperty("Range", "bytes=" + start + "-" + end);
+        conn.setInstanceFollowRedirects(true);
+        conn.connect();
+
+        int responseCode = conn.getResponseCode();
+        if (responseCode != HttpURLConnection.HTTP_PARTIAL) {
+            throw new IOException("Unexpected HTTP server response: " + responseCode);
+        }
+
+        byte[] dataBuffer = new byte[2048];
+        int read;
+
+        is = conn.getInputStream();
+        read = is.read(dataBuffer, 0, ZipConstants.LOCHDR);
+        if (read < ZipConstants.LOCHDR) {
+            throw new IOException("Unable to fetch the local header");
+        }
+        close(is);
+        disconnect(conn);
+
+        ByteBuffer buffer = ByteBuffer.allocate(ZipConstants.LOCHDR);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        buffer.put(dataBuffer, 0, ZipConstants.LOCHDR);
+
+        final int headerSignature = buffer.getInt(0);
+        if (headerSignature != 0x04034b50) {
+            disconnect(conn);
+            throw new IOException("Local file header signature mismatch");
+        }
+
+        final int localCompressedSize = buffer.getInt(ZipConstants.LOCSIZ);
+        final short localFileNameLength = buffer.getShort(ZipConstants.LOCNAM);
+        final short localExtraLength = buffer.getShort(ZipConstants.LOCEXT);
+
+        // Define the local file range
+        start = entry.getOffset() + ZipConstants.LOCHDR + localFileNameLength + localExtraLength;
+        end = start + localCompressedSize;
+
+        // Open a new one with
+        conn = openConnection();
+        conn.setRequestProperty("Range", "bytes=" + start + "-" + end);
+        conn.setInstanceFollowRedirects(true);
+        conn.connect();
+
+        responseCode = conn.getResponseCode();
+        if (responseCode != HttpURLConnection.HTTP_PARTIAL) {
+            disconnect(conn);
+            close(is);
+            throw new IOException("Unexpected HTTP server response: " + responseCode);
+        }
+
+        return conn;
     }
 }
 
