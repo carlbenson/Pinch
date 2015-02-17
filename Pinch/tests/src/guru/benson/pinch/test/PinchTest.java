@@ -17,7 +17,6 @@
 package guru.benson.pinch.test;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
@@ -28,22 +27,24 @@ import guru.benson.pinch.ExtendedZipEntry;
 import guru.benson.pinch.Pinch;
 
 public class PinchTest extends InstrumentationTestCase {
-
-    final String testUrl = "http://www.cbconsulting.se/files/BSHInform.10.1.1-1.mib";
+    final String DOWNLOAD_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        + File.separator + "PinchTest";
 
     public void testFetchDirectory() throws Throwable {
-        URL url = new URL(testUrl);
+        URL url = new URL("http://www.cbconsulting.se/files/BSHInform.10.1.1-1.mib");
         Pinch p = new Pinch(url);
         List<ExtendedZipEntry> list = p.parseCentralDirectory();
         for (ExtendedZipEntry entry : list) {
-            try {
-                p.downloadFile(entry, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                    + File.separator
-                    + entry.getName());
-            } catch (IOException e) {
-                e.printStackTrace();
-                break;
-            }
+            p.downloadFile(entry, DOWNLOAD_DIR + File.separator + "testFetchDirectory");
+        }
+    }
+
+    public void testFetchZipWithCentralAndLocalExtraMismatch() throws Throwable {
+        URL url = new URL("http://niiranen.net/assets/demo_1280_800_149.zip");
+        Pinch pinch = new Pinch(url);
+        List<ExtendedZipEntry> contents = pinch.parseCentralDirectory();
+        for (ExtendedZipEntry entry : contents) {
+            pinch.downloadFile(entry, DOWNLOAD_DIR + File.separator + "testFetchZipWithInvalidCentralData");
         }
     }
 }

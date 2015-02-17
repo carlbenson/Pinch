@@ -25,7 +25,7 @@ public class ExtendedZipEntry extends ZipEntry {
 
     private short mInternalAttr;
     private short mExternalAttr;
-    private long mOffset;
+    private long  mOffset;
     private short mExtraLength;
 
     public ExtendedZipEntry(String name) {
