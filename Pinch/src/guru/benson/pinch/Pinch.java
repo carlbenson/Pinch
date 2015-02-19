@@ -486,11 +486,13 @@ public class Pinch {
         }
 
         byte[] dataBuffer = new byte[2048];
-        int read;
+        int read, bytes = 0;
 
         is = conn.getInputStream();
-        read = is.read(dataBuffer, 0, ZipConstants.LOCHDR);
-        if (read < ZipConstants.LOCHDR) {
+        while ((read = is.read(dataBuffer)) != -1) {
+            bytes += read;
+        }
+        if (bytes < ZipConstants.LOCHDR) {
             throw new IOException("Unable to fetch the local header");
         }
         close(is);
