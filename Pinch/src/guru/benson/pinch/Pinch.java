@@ -492,11 +492,11 @@ public class Pinch {
         while ((read = is.read(dataBuffer)) != -1) {
             bytes += read;
         }
+        close(is);
+        disconnect(conn);
         if (bytes < ZipConstants.LOCHDR) {
             throw new IOException("Unable to fetch the local header");
         }
-        close(is);
-        disconnect(conn);
 
         ByteBuffer buffer = ByteBuffer.allocate(ZipConstants.LOCHDR);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
