@@ -503,7 +503,7 @@ public class Pinch {
         buffer.put(dataBuffer, 0, ZipConstants.LOCHDR);
 
         final int headerSignature = buffer.getInt(0);
-        if (headerSignature != 0x04034b50) {
+        if (headerSignature != ZipConstants.LOCSIG) {
             disconnect(conn);
             throw new IOException("Local file header signature mismatch");
         }
