@@ -47,4 +47,13 @@ public class PinchTest extends InstrumentationTestCase {
             pinch.downloadFile(entry, DOWNLOAD_DIR + File.separator + "testFetchZipWithInvalidCentralData");
         }
     }
+
+    public void testFetchZipWithZeroCompressedSizeLocalHeaders() throws Throwable {
+        URL url = new URL("http://niiranen.net/assets/local-header-compressed-size-0.zip");
+        Pinch pinch = new Pinch(url);
+        List<ExtendedZipEntry> contents = pinch.parseCentralDirectory();
+        for (ExtendedZipEntry entry : contents) {
+            pinch.downloadFile(entry, DOWNLOAD_DIR + File.separator + "testFetchZipWithZeroCompressedSizeLocalHeaders");
+        }
+    }
 }

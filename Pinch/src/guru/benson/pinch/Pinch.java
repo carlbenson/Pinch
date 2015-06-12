@@ -508,9 +508,14 @@ public class Pinch {
             throw new IOException("Local file header signature mismatch");
         }
 
-        final int localCompressedSize = buffer.getInt(ZipConstants.LOCSIZ);
+        int localCompressedSize = buffer.getInt(ZipConstants.LOCSIZ);
         final short localFileNameLength = buffer.getShort(ZipConstants.LOCNAM);
         final short localExtraLength = buffer.getShort(ZipConstants.LOCEXT);
+
+        // Mac OSX sets the local size to zero when creating the zip in Finder.
+        if (localCompressedSize == 0) {
+            localCompressedSize = (int) entry.getCompressedSize();
+        }
 
         // Define the local file range
         start = entry.getOffset() + ZipConstants.LOCHDR + localFileNameLength + localExtraLength;
