@@ -1,6 +1,6 @@
 /*
  * Copyright 2013 Carl Benson
- * Copyright 2014 Mattias Niiranen
+ * Copyright 2014-2015 Mattias Niiranen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ import java.util.zip.CRC32;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 import java.util.zip.ZipEntry;
-
-import org.apache.http.client.methods.HttpHead;
 
 /**
  * This class allows for single file downloads from a ZIP file stored on an HTTP server.
@@ -154,7 +152,7 @@ public class Pinch {
         int length = -1;
         try {
             conn = openConnection();
-            conn.setRequestMethod(HttpHead.METHOD_NAME);
+            conn.setRequestMethod("HEAD");
             conn.connect();
 
             // handle re-directs
@@ -292,6 +290,7 @@ public class Pinch {
 
             ExtendedZipEntry zeGermans = new ExtendedZipEntry(fileName);
 
+            //noinspection ResourceType
             zeGermans.setMethod(buf.getShort(offset + ZipConstants.CENHOW));
 
             CRC32 crc = new CRC32();
