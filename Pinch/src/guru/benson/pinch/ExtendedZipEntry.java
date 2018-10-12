@@ -24,11 +24,14 @@ import java.util.zip.ZipEntry;
 public class ExtendedZipEntry extends ZipEntry {
 
     private short mInternalAttr;
+
     private short mExternalAttr;
-    private long  mOffset;
+
+    private long mOffset;
+
     private short mExtraLength;
 
-    public ExtendedZipEntry(String name) {
+    ExtendedZipEntry(String name) {
         super(name);
     }
 
@@ -40,31 +43,31 @@ public class ExtendedZipEntry extends ZipEntry {
         return mInternalAttr;
     }
 
+    void setInternalAttr(short attr) {
+        mInternalAttr = attr;
+    }
+
     public short getExternalAttr() {
         return mExternalAttr;
     }
 
-    public long getOffset() {
-        return mOffset;
-    }
-
-    public short getExtraLength() {
-        return mExtraLength;
-    }
-
-    public void setInternalAttr(short attr) {
-        mInternalAttr = attr;
-    }
-
-    public void setExternalAttr(short attr) {
+    void setExternalAttr(short attr) {
         mExternalAttr = attr;
     }
 
-    public void setOffset(long offset) {
+    long getOffset() {
+        return mOffset;
+    }
+
+    void setOffset(long offset) {
         mOffset = offset;
     }
 
-    public void setExtraLength(short length) {
+    short getExtraLength() {
+        return mExtraLength;
+    }
+
+    void setExtraLength(short length) {
         mExtraLength = length;
     }
 }

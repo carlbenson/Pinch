@@ -18,60 +18,106 @@ package guru.benson.pinch;
 
 /**
  * Modified copy of java/util/zip/ZipConstants.java from Android source.
- * 
- * For ZIP header descriptions, see
- * http://en.wikipedia.org/wiki/ZIP_(file_format)#File_headers
+ *
+ * For ZIP header descriptions, see http://en.wikipedia.org/wiki/ZIP_(file_format)#File_headers
  */
 public class ZipConstants {
-    /** signatures */
-    public static final long LOCSIG = 0x4034b50;
-    public static final long EXTSIG = 0x8074b50;
-    public static final long CENSIG = 0x2014b50;
-    public static final long ENDSIG = 0x6054b50;
 
-    /** header sizes */
-    public static final int LOCHDR = 30;
+    /**
+     * local header offsets
+     */
+    public static final int LOCVER = 4;
+
+    public static final long EXTSIG = 0x8074b50;
+
+    public static final long CENSIG = 0x2014b50;
+
+    /**
+     * data descriptor offsets
+     */
+    public static final int EXTCRC = 4;
+
+    /**
+     * central directory offsets
+     */
+    public static final int CENVEM = 4;
+
     public static final int EXTHDR = 16;
-    public static final int CENHDR = 46;
+
+    /**
+     * central directory end offsets
+     */
+    public static final int ENDSUB = 8;
+
     public static final int ENDHDR = 22;
 
-    /** local header offsets */
-    public static final int LOCVER = 4;
-    public static final int LOCFLG = 6;
-    public static final int LOCHOW = 8;
-    public static final int LOCTIM = 10;
-    public static final int LOCCRC = 14;
-    public static final int LOCSIZ = 18;
-    public static final int LOCLEN = 22;
-    public static final int LOCNAM = 26;
-    public static final int LOCEXT = 28;
+    /**
+     * signatures
+     */
+    static final long LOCSIG = 0x4034b50;
 
-    /** data descriptor offsets */
-    public static final int EXTCRC = 4;
+    public static final int LOCFLG = 6;
+
+    public static final int LOCHOW = 8;
+
+    public static final int LOCTIM = 10;
+
+    public static final int LOCCRC = 14;
+
+    static final long ENDSIG = 0x6054b50;
+
+    public static final int LOCLEN = 22;
+
+    /**
+     * header sizes
+     */
+    static final int LOCHDR = 30;
+
+    static final int CENHDR = 46;
+
+    static final int LOCSIZ = 18;
+
     public static final int EXTSIZ = 8;
+
     public static final int EXTLEN = 12;
 
-    /** central directory offsets */
-    public static final int CENVEM = 4;
-    public static final int CENVER = 6;
-    public static final int CENFLG = 8;
-    public static final int CENHOW = 10;
-    public static final int CENTIM = 12;
-    public static final int CENCRC = 16;
-    public static final int CENSIZ = 20;
-    public static final int CENLEN = 24;
-    public static final int CENNAM = 28;
-    public static final int CENEXT = 30;
-    public static final int CENCOM = 32;
-    public static final int CENDSK = 34;
-    public static final int CENATT = 36;
-    public static final int CENATX = 38;
-    public static final int CENOFF = 42;
+    static final int LOCNAM = 26;
 
-    /** central directory end offsets */
-    public static final int ENDSUB = 8;
+    public static final int CENVER = 6;
+
+    public static final int CENFLG = 8;
+
+    static final int LOCEXT = 28;
+
+    public static final int CENTIM = 12;
+
+    static final int CENHOW = 10;
+
+    static final int CENCRC = 16;
+
+    static final int CENSIZ = 20;
+
+    static final int CENLEN = 24;
+
+    static final int CENNAM = 28;
+
+    static final int CENEXT = 30;
+
+    public static final int CENDSK = 34;
+
+    static final int CENCOM = 32;
+
+    static final int CENATT = 36;
+
+    static final int CENATX = 38;
+
+    static final int CENOFF = 42;
+
     public static final int ENDTOT = 10;
+
     public static final int ENDSIZ = 12;
+
     public static final int ENDOFF = 16;
+
     public static final int ENDCOM = 20;
 }

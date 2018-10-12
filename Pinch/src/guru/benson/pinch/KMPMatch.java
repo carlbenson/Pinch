@@ -1,19 +1,20 @@
 package guru.benson.pinch;
 
 /**
- * Knuth-Morris-Pratt Algorithm for Pattern Matching
- * http://stackoverflow.com/questions/1507780/searching-for-a-sequence-of-bytes-in-a-binary-file-with-java
+ * Knuth-Morris-Pratt Algorithm for Pattern Matching http://stackoverflow.com/questions/1507780/searching-for-a-sequence-of-bytes-in-a-binary-file-with-java
  */
-public class KMPMatch {
+class KMPMatch {
+
     /**
      * Finds the first occurrence of the pattern in the text.
      */
-    public static int indexOf(byte[] data, byte[] pattern) {
+    static int indexOf(byte[] data, byte[] pattern) {
         int[] failure = computeFailure(pattern);
 
         int j = 0;
-        if (data.length == 0)
+        if (data.length == 0) {
             return -1;
+        }
 
         for (int i = 0; i < data.length; i++) {
             while (j > 0 && pattern[j] != data[i]) {
@@ -30,8 +31,8 @@ public class KMPMatch {
     }
 
     /**
-     * Computes the failure function using a boot-strapping process,
-     * where the pattern is matched against itself.
+     * Computes the failure function using a boot-strapping process, where the pattern is matched
+     * against itself.
      */
     private static int[] computeFailure(byte[] pattern) {
         int[] failure = new int[pattern.length];

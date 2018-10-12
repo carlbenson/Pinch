@@ -16,20 +16,24 @@
 
 package guru.benson.pinch.test;
 
+import org.junit.Test;
+
+import android.os.Environment;
+
 import java.io.File;
 import java.net.URL;
 import java.util.List;
 
-import android.os.Environment;
-import android.test.InstrumentationTestCase;
-
 import guru.benson.pinch.ExtendedZipEntry;
 import guru.benson.pinch.Pinch;
 
-public class PinchTest extends InstrumentationTestCase {
-    final String DOWNLOAD_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        + File.separator + "PinchTest";
+public class PinchTest {
 
+    private final String DOWNLOAD_DIR =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    + File.separator + "PinchTest";
+
+    @Test
     public void testFetchDirectory() throws Throwable {
         URL url = new URL("http://www.cbconsulting.se/files/BSHInform.10.1.1-1.mib");
         Pinch p = new Pinch(url);
@@ -39,21 +43,25 @@ public class PinchTest extends InstrumentationTestCase {
         }
     }
 
+    @Test
     public void testFetchZipWithCentralAndLocalExtraMismatch() throws Throwable {
         URL url = new URL("http://niiranen.net/assets/demo_1280_800_149.zip");
         Pinch pinch = new Pinch(url);
         List<ExtendedZipEntry> contents = pinch.parseCentralDirectory();
         for (ExtendedZipEntry entry : contents) {
-            pinch.downloadFile(entry, DOWNLOAD_DIR + File.separator + "testFetchZipWithInvalidCentralData");
+            pinch.downloadFile(entry,
+                    DOWNLOAD_DIR + File.separator + "testFetchZipWithInvalidCentralData");
         }
     }
 
+    @Test
     public void testFetchZipWithZeroCompressedSizeLocalHeaders() throws Throwable {
         URL url = new URL("http://niiranen.net/assets/local-header-compressed-size-0.zip");
         Pinch pinch = new Pinch(url);
         List<ExtendedZipEntry> contents = pinch.parseCentralDirectory();
         for (ExtendedZipEntry entry : contents) {
-            pinch.downloadFile(entry, DOWNLOAD_DIR + File.separator + "testFetchZipWithZeroCompressedSizeLocalHeaders");
+            pinch.downloadFile(entry, DOWNLOAD_DIR + File.separator
+                    + "testFetchZipWithZeroCompressedSizeLocalHeaders");
         }
     }
 }

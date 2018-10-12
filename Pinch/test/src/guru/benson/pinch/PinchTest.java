@@ -15,10 +15,6 @@
  */
 package guru.benson.pinch;
 
-import com.squareup.okhttp.mockwebserver.MockResponse;
-import com.squareup.okhttp.mockwebserver.MockWebServer;
-
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -33,6 +29,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 import okio.Buffer;
 
 import static org.junit.Assert.assertEquals;
@@ -41,18 +39,14 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class PinchTest {
+
     @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-    private MockWebServer mockWebServer;
-
-    @Before
-    public void setUp() throws Exception {
-        mockWebServer = new MockWebServer();
-    }
+    private final MockWebServer mockWebServer = new MockWebServer();
 
     @Test
-    public void testParseCentralDirectoryServerError() throws Exception {
+    public void testParseCentralDirectoryServerError() {
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(HttpURLConnection.HTTP_INTERNAL_ERROR));
         Pinch pinch = new Pinch(mockWebServer.url("/").url());
@@ -109,7 +103,7 @@ public class PinchTest {
         assertEquals(zipEntry.getSize(), pinched.length());
     }
 
-    void enqueueForCentralHeaderParsing(URL zip) throws IOException {
+    private void enqueueForCentralHeaderParsing(URL zip) throws IOException {
         int zipLength = zip.openConnection().getContentLength();
         mockWebServer.enqueue(new MockResponse()
                 .setHeader("Content-Length", zipLength));
@@ -118,7 +112,6 @@ public class PinchTest {
                 .setBody(new Buffer()
                         .readFrom(new ByteArrayInputStream(centralHeader)))
                 .setResponseCode(HttpURLConnection.HTTP_PARTIAL));
-
 
         byte[] zipEndSignature = ByteBuffer.allocate(4)
                 .order(ByteOrder.LITTLE_ENDIAN)
@@ -152,7 +145,7 @@ public class PinchTest {
                 .setResponseCode(HttpURLConnection.HTTP_PARTIAL));
     }
 
-    void enqueueForFileDownload(URL zip, ExtendedZipEntry zipEntry) throws IOException {
+    private void enqueueForFileDownload(URL zip, ExtendedZipEntry zipEntry) throws IOException {
         mockWebServer.enqueue(new MockResponse()
                 .setBody(new Buffer()
                         .readFrom(new ByteArrayInputStream(
@@ -165,7 +158,8 @@ public class PinchTest {
                 .setResponseCode(HttpURLConnection.HTTP_PARTIAL));
     }
 
-    byte[] getCentralDirectoryHeader(InputStream inputStream, int length) throws IOException {
+    private byte[] getCentralDirectoryHeader(InputStream inputStream, int length)
+            throws IOException {
         assertTrue(inputStream.skip(Math.max(length - 4096, 0)) >= 0);
         byte[] data = new byte[2048];
         int read, bytes = 0;
@@ -175,7 +169,8 @@ public class PinchTest {
         return data;
     }
 
-    byte[] getCentralDirectory(InputStream inputStream, int offset, int length) throws IOException {
+    private byte[] getCentralDirectory(InputStream inputStream, int offset, int length)
+            throws IOException {
         assertTrue(inputStream.skip(offset) >= 0);
         byte[] data = new byte[2048];
         ByteBuffer buf = ByteBuffer.allocate(length);
@@ -190,7 +185,8 @@ public class PinchTest {
         return buf.array();
     }
 
-    byte[] getLocalHeader(InputStream inputStream, ExtendedZipEntry zipEntry) throws IOException {
+    private byte[] getLocalHeader(InputStream inputStream, ExtendedZipEntry zipEntry)
+            throws IOException {
         long offset = zipEntry.getOffset();
         int len = ZipConstants.LOCHDR;
         byte[] data = new byte[ZipConstants.LOCHDR];
@@ -201,7 +197,8 @@ public class PinchTest {
         return data;
     }
 
-    byte[] getLocalFile(InputStream inputStream, ExtendedZipEntry zipEntry) throws IOException {
+    private byte[] getLocalFile(InputStream inputStream, ExtendedZipEntry zipEntry)
+            throws IOException {
         long offset = zipEntry.getOffset() + ZipConstants.LOCHDR +
                 zipEntry.getName().length() + zipEntry.getExtraLength();
         int length = (int) zipEntry.getCompressedSize();

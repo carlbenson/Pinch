@@ -39,34 +39,20 @@ import java.util.zip.ZipEntry;
  */
 public class Pinch {
 
-    final public static String LOG_TAG = Pinch.class.getSimpleName();
+    private final static String LOG_TAG = Pinch.class.getSimpleName();
 
-    public interface ProgressListener {
-        /**
-         * @param progressTotal
-         *     Number of bytes that have been downloaded.
-         * @param progressDelta
-         *     Number of bytes that have been downloaded since last update.
-         * @param totalSize
-         *     Total size in bytes.
-         */
-        public void onProgress(long progressTotal, long progressDelta, long totalSize);
-    }
+    private URL mUrl;
 
-    private URL    mUrl;
     private String mUserAgent;
 
-    private short entriesCount;
-    private short zipFileCommentLength;
-
     private int centralDirectorySize;
+
     private int centralDirectoryOffset;
 
     /**
      * Class constructor.
      *
-     * @param url
-     *     The URL pointing to the ZIP file on the HTTP server.
+     * @param url The URL pointing to the ZIP file on the HTTP server.
      */
     public Pinch(URL url) {
         this(url, null);
@@ -75,30 +61,18 @@ public class Pinch {
     /**
      * Class constructor.
      *
-     * @param url
-     *     The URL pointing to the ZIP file on the HTTP server.
-     * @param userAgent
-     *     User-agent to be used together with the download request.
+     * @param url       The URL pointing to the ZIP file on the HTTP server.
+     * @param userAgent User-agent to be used together with the download request.
      */
     public Pinch(URL url, String userAgent) {
         mUrl = url;
         mUserAgent = userAgent;
     }
 
-    private boolean setUrl(String url) {
-        try {
-            mUrl = new URL(url);
-        } catch (MalformedURLException e) {
-            return false;
-        }
-        return true;
-    }
-
     /**
      * Handy log method.
      *
-     * @param msg
-     *     The message to print to debug log.
+     * @param msg The message to print to debug log.
      */
     private static void log(String msg) {
         if (BuildConfig.DEBUG) {
@@ -109,8 +83,7 @@ public class Pinch {
     /**
      * Handy close method to avoid nestled try/catch blocks.
      *
-     * @param c
-     *     The object to close.
+     * @param c The object to close.
      */
     private static void close(Closeable c) {
         if (c != null) {
@@ -122,24 +95,75 @@ public class Pinch {
         }
     }
 
+    /**
+     * Handy disconnect method to wrap null-check.
+     *
+     * @param c Connection to disconnect.
+     */
+    private static void disconnect(HttpURLConnection c) {
+        if (c != null) {
+            c.disconnect();
+        }
+    }
+
+    /**
+     * Extract all ZipEntries from the ZIP central directory.
+     *
+     * @param buf The byte buffer containing the ZIP central directory.
+     * @return A list with all ZipEntries.
+     */
+    private static ArrayList<ExtendedZipEntry> parseHeaders(ByteBuffer buf) {
+        ArrayList<ExtendedZipEntry> zeList = new ArrayList<>();
+
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+
+        int offset = 0;
+
+        while (offset < buf.limit() - ZipConstants.CENHDR) {
+            short fileNameLen = buf.getShort(offset + ZipConstants.CENNAM);
+            short extraFieldLen = buf.getShort(offset + ZipConstants.CENEXT);
+            short fileCommentLen = buf.getShort(offset + ZipConstants.CENCOM);
+
+            String fileName = new String(buf.array(), offset + ZipConstants.CENHDR, fileNameLen);
+
+            ExtendedZipEntry zeGermans = new ExtendedZipEntry(fileName);
+
+            //noinspection ResourceType
+            zeGermans.setMethod(buf.getShort(offset + ZipConstants.CENHOW));
+
+            CRC32 crc = new CRC32();
+            crc.update(buf.getInt(offset + ZipConstants.CENCRC));
+            zeGermans.setCrc(crc.getValue());
+            zeGermans.setCompressedSize(buf.getInt(offset + ZipConstants.CENSIZ));
+            zeGermans.setSize(buf.getInt(offset + ZipConstants.CENLEN));
+            zeGermans.setInternalAttr(buf.getShort(offset + ZipConstants.CENATT));
+            zeGermans.setExternalAttr(buf.getShort(offset + ZipConstants.CENATX));
+            zeGermans.setOffset((long) buf.getInt(offset + ZipConstants.CENOFF));
+
+            zeGermans.setExtraLength(extraFieldLen);
+
+            zeList.add(zeGermans);
+            offset += ZipConstants.CENHDR + fileNameLen + extraFieldLen + fileCommentLen;
+        }
+
+        return zeList;
+    }
+
+    private boolean setUrl(String url) {
+        try {
+            mUrl = new URL(url);
+        } catch (MalformedURLException e) {
+            return false;
+        }
+        return true;
+    }
+
     private HttpURLConnection openConnection() throws IOException {
         HttpURLConnection conn = (HttpURLConnection) mUrl.openConnection();
         if (mUserAgent != null) {
             conn.setRequestProperty("User-agent", mUserAgent);
         }
         return conn;
-    }
-
-    /**
-     * Handy disconnect method to wrap null-check.
-     *
-     * @param c
-     *     Connection to disconnect.
-     */
-    private static void disconnect(HttpURLConnection c) {
-        if (c != null) {
-            c.disconnect();
-        }
     }
 
     /**
@@ -178,9 +202,7 @@ public class Pinch {
     /**
      * Searches for the ZIP central directory.
      *
-     * @param length
-     *     The content length of the file to search.
-     *
+     * @param length The content length of the file to search.
      * @return {@code true} if central directory was found and parsed, otherwise {@code false}
      */
     private boolean findCentralDirectory(int length) {
@@ -224,14 +246,13 @@ public class Pinch {
     /**
      * Parses the ZIP central directory from a byte buffer.
      *
-     * @param data
-     *     The byte buffer to be parsed.
-     *
+     * @param data The byte buffer to be parsed.
      * @return {@code true} if central directory was parsed, otherwise {@code false}
      */
     private boolean parseEndOfCentralDirectory(byte[] data) {
 
-        byte[] zipEndSignature = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt((int) ZipConstants.ENDSIG).array();
+        byte[] zipEndSignature = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN)
+                .putInt((int) ZipConstants.ENDSIG).array();
 
         // find start of ZIP archive signature.
         int index = KMPMatch.indexOf(data, zipEndSignature);
@@ -258,58 +279,12 @@ public class Pinch {
         // skip numberOfCentralDirectoriesOnThisDisk
         buf.getShort();
 
-        entriesCount = buf.getShort();
+        short entriesCount = buf.getShort();
         centralDirectorySize = buf.getInt();
         centralDirectoryOffset = buf.getInt();
-        zipFileCommentLength = buf.getShort();
+        short zipFileCommentLength = buf.getShort();
 
         return true;
-    }
-
-    /**
-     * Extract all ZipEntries from the ZIP central directory.
-     *
-     * @param buf
-     *     The byte buffer containing the ZIP central directory.
-     *
-     * @return A list with all ZipEntries.
-     */
-    private static ArrayList<ExtendedZipEntry> parseHeaders(ByteBuffer buf) {
-        ArrayList<ExtendedZipEntry> zeList = new ArrayList<ExtendedZipEntry>();
-
-        buf.order(ByteOrder.LITTLE_ENDIAN);
-
-        int offset = 0;
-
-        while (offset < buf.limit() - ZipConstants.CENHDR) {
-            short fileNameLen = buf.getShort(offset + ZipConstants.CENNAM);
-            short extraFieldLen = buf.getShort(offset + ZipConstants.CENEXT);
-            short fileCommentLen = buf.getShort(offset + ZipConstants.CENCOM);
-
-            String fileName = new String(buf.array(), offset + ZipConstants.CENHDR, fileNameLen);
-
-            ExtendedZipEntry zeGermans = new ExtendedZipEntry(fileName);
-
-            //noinspection ResourceType
-            zeGermans.setMethod(buf.getShort(offset + ZipConstants.CENHOW));
-
-            CRC32 crc = new CRC32();
-            crc.update(buf.getInt(offset + ZipConstants.CENCRC));
-            zeGermans.setCrc(crc.getValue());
-
-            zeGermans.setCompressedSize(buf.getInt(offset + ZipConstants.CENSIZ));
-            zeGermans.setSize(buf.getInt(offset + ZipConstants.CENLEN));
-            zeGermans.setInternalAttr(buf.getShort(offset + ZipConstants.CENATT));
-            zeGermans.setExternalAttr(buf.getShort(offset + ZipConstants.CENATX));
-            zeGermans.setOffset((long) buf.getInt(offset + ZipConstants.CENOFF));
-
-            zeGermans.setExtraLength(extraFieldLen);
-
-            zeList.add(zeGermans);
-            offset += ZipConstants.CENHDR + fileNameLen + extraFieldLen + fileCommentLen;
-        }
-
-        return zeList;
     }
 
     /**
@@ -375,7 +350,8 @@ public class Pinch {
         downloadFile(entry, null, entry.getName(), null);
     }
 
-    public void downloadFile(ExtendedZipEntry entry, String dir) throws IOException, InterruptedException {
+    public void downloadFile(ExtendedZipEntry entry, String dir)
+            throws IOException, InterruptedException {
         downloadFile(entry, dir, entry.getName(), null);
     }
 
@@ -384,25 +360,22 @@ public class Pinch {
      * guru.benson.pinch.Pinch.ProgressListener)} where {@code name} is extracted from {@code
      * entry}.
      */
-    public void downloadFile(ExtendedZipEntry entry, String dir, ProgressListener listener) throws IOException, InterruptedException {
+    public void downloadFile(ExtendedZipEntry entry, String dir, ProgressListener listener)
+            throws IOException, InterruptedException {
         downloadFile(entry, dir, entry.getName(), listener);
     }
 
     /**
      * Download and inflate file from a ZIP stored on a HTTP server.
      *
-     * @param entry
-     *     Entry representing file to download.
-     * @param name
-     *     Path where to store the downloaded file.
-     * @param listener
-     *
-     * @throws IOException
-     *     If an error occurred while reading from network or writing to disk.
-     * @throws InterruptedException
-     *     If the thread was interrupted.
+     * @param entry Entry representing file to download.
+     * @param name  Path where to store the downloaded file.
+     * @throws IOException          If an error occurred while reading from network or writing to
+     *                              disk.
+     * @throws InterruptedException If the thread was interrupted.
      */
-    public void downloadFile(ExtendedZipEntry entry, String dir, String name, ProgressListener listener) throws IOException, InterruptedException {
+    void downloadFile(ExtendedZipEntry entry, String dir, String name,
+            ProgressListener listener) throws IOException, InterruptedException {
         HttpURLConnection conn = null;
         InputStream is = null;
         FileOutputStream fos = null;
@@ -463,8 +436,6 @@ public class Pinch {
     /**
      * Get a {@link java.net.HttpURLConnection} that has its {@link java.io.InputStream} pointing at
      * the file data of the given {@link guru.benson.pinch.ExtendedZipEntry}.
-     *
-     * @throws IOException
      */
     private HttpURLConnection getEntryInputStream(ExtendedZipEntry entry) throws IOException {
         HttpURLConnection conn;
@@ -534,6 +505,16 @@ public class Pinch {
         }
 
         return conn;
+    }
+
+    public interface ProgressListener {
+
+        /**
+         * @param progressTotal Number of bytes that have been downloaded.
+         * @param progressDelta Number of bytes that have been downloaded since last update.
+         * @param totalSize     Total size in bytes.
+         */
+        void onProgress(long progressTotal, long progressDelta, long totalSize);
     }
 }
 
