@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 archivesBaseName = 'Pinch'
 
@@ -6,10 +7,6 @@ android {
 
     compileSdkVersion 28
     buildToolsVersion "28.0.3"
-
-    repositories {
-        mavenCentral()
-    }
 
     defaultConfig {
         minSdkVersion 14
@@ -41,6 +38,7 @@ dependencies {
 
     androidTestImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.squareup.okhttp3:mockwebserver:3.9.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
 
 apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/master/gradle-mvn-push.gradle'
