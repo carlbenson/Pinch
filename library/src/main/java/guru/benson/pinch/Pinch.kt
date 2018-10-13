@@ -267,7 +267,7 @@ class Pinch
      * @throws InterruptedException If the thread was interrupted.
      */
     @Throws(IOException::class, InterruptedException::class)
-    internal fun downloadFile(
+    fun downloadFile(
         entry: ExtendedZipEntry, dir: String?, name: String,
         listener: ProgressListener?
     ) {
@@ -392,6 +392,49 @@ class Pinch
         return conn
     }
 
+    /**
+     * Extract all ZipEntries from the ZIP central directory.
+     *
+     * @param buf The byte buffer containing the ZIP central directory.
+     * @return A list with all ZipEntries.
+     */
+    private fun parseHeaders(buf: ByteBuffer): ArrayList<ExtendedZipEntry> {
+        val zeList = ArrayList<ExtendedZipEntry>()
+
+        buf.order(ByteOrder.LITTLE_ENDIAN)
+
+        var offset = 0
+
+        while (offset < buf.limit() - ZipConstants.CENHDR) {
+            val fileNameLen = buf.getShort(offset + ZipConstants.CENNAM)
+            val extraFieldLen = buf.getShort(offset + ZipConstants.CENEXT)
+            val fileCommentLen = buf.getShort(offset + ZipConstants.CENCOM)
+
+            val fileName =
+                String(buf.array(), offset + ZipConstants.CENHDR, fileNameLen.toInt())
+
+            val zeGermans = ExtendedZipEntry(fileName)
+
+            zeGermans.method = buf.getShort(offset + ZipConstants.CENHOW).toInt()
+
+            val crc = CRC32()
+            crc.update(buf.getInt(offset + ZipConstants.CENCRC))
+            zeGermans.crc = crc.value
+            zeGermans.compressedSize = buf.getInt(offset + ZipConstants.CENSIZ).toLong()
+            zeGermans.size = buf.getInt(offset + ZipConstants.CENLEN).toLong()
+            zeGermans.internalAttr = buf.getShort(offset + ZipConstants.CENATT)
+            zeGermans.externalAttr = buf.getShort(offset + ZipConstants.CENATX)
+            zeGermans.offset = buf.getInt(offset + ZipConstants.CENOFF).toLong()
+
+            zeGermans.extraLength = extraFieldLen
+
+            zeList.add(zeGermans)
+            offset += ZipConstants.CENHDR + fileNameLen.toInt() + extraFieldLen.toInt() + fileCommentLen.toInt()
+        }
+
+        return zeList
+    }
+
     interface ProgressListener {
 
         /**
@@ -402,87 +445,42 @@ class Pinch
         fun onProgress(progressTotal: Long, progressDelta: Long, totalSize: Long)
     }
 
-    companion object {
 
-        private val LOG_TAG = Pinch::class.java.simpleName
+    private val LOG_TAG = Pinch::class.java.simpleName
 
-        /**
-         * Handy log method.
-         *
-         * @param msg The message to print to debug log.
-         */
-        private fun log(msg: String) {
-            if (BuildConfig.DEBUG) {
-                android.util.Log.d(LOG_TAG, msg)
-            }
+    /**
+     * Handy log method.
+     *
+     * @param msg The message to print to debug log.
+     */
+    private fun log(msg: String) {
+        if (BuildConfig.DEBUG) {
+            android.util.Log.d(LOG_TAG, msg)
         }
+    }
 
-        /**
-         * Handy close method to avoid nestled try/catch blocks.
-         *
-         * @param c The object to close.
-         */
-        private fun close(c: Closeable?) {
-            if (c != null) {
-                try {
-                    c.close()
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-
-            }
-        }
-
-        /**
-         * Handy disconnect method to wrap null-check.
-         *
-         * @param c Connection to disconnect.
-         */
-        private fun disconnect(c: HttpURLConnection?) {
-            c?.disconnect()
-        }
-
-        /**
-         * Extract all ZipEntries from the ZIP central directory.
-         *
-         * @param buf The byte buffer containing the ZIP central directory.
-         * @return A list with all ZipEntries.
-         */
-        private fun parseHeaders(buf: ByteBuffer): ArrayList<ExtendedZipEntry> {
-            val zeList = ArrayList<ExtendedZipEntry>()
-
-            buf.order(ByteOrder.LITTLE_ENDIAN)
-
-            var offset = 0
-
-            while (offset < buf.limit() - ZipConstants.CENHDR) {
-                val fileNameLen = buf.getShort(offset + ZipConstants.CENNAM)
-                val extraFieldLen = buf.getShort(offset + ZipConstants.CENEXT)
-                val fileCommentLen = buf.getShort(offset + ZipConstants.CENCOM)
-
-                val fileName =
-                    String(buf.array(), offset + ZipConstants.CENHDR, fileNameLen.toInt())
-
-                val zeGermans = ExtendedZipEntry(fileName)
-
-                zeGermans.method = buf.getShort(offset + ZipConstants.CENHOW).toInt()
-
-                val crc = CRC32()
-                crc.update(buf.getInt(offset + ZipConstants.CENCRC))
-                zeGermans.crc = crc.value
-                zeGermans.compressedSize = buf.getInt(offset + ZipConstants.CENSIZ).toLong()
-                zeGermans.size = buf.getInt(offset + ZipConstants.CENLEN).toLong()
-                zeGermans.internalAttr = buf.getShort(offset + ZipConstants.CENATT)
-                zeGermans.externalAttr = buf.getShort(offset + ZipConstants.CENATX)
-                zeGermans.offset = buf.getInt(offset + ZipConstants.CENOFF).toLong()
-
-                zeGermans.extraLength = extraFieldLen
-
-                zeList.add(zeGermans)
-                offset += ZipConstants.CENHDR + fileNameLen.toInt() + extraFieldLen.toInt() + fileCommentLen.toInt()
+    /**
+     * Handy close method to avoid nestled try/catch blocks.
+     *
+     * @param c The object to close.
+     */
+    private fun close(c: Closeable?) {
+        if (c != null) {
+            try {
+                c.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
 
-            return zeList
         }
+    }
+
+    /**
+     * Handy disconnect method to wrap null-check.
+     *
+     * @param c Connection to disconnect.
+     */
+    private fun disconnect(c: HttpURLConnection?) {
+        c?.disconnect()
     }
 }
